@@ -1,0 +1,5 @@
+audio_filter: SOFAlizer UI for QT4
+
+This adds control options to the qt4 Interface for the SOFAlizer plugin.
+
+

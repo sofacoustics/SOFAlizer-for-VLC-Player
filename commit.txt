@@ -1,0 +1,9 @@
+audio_filter: SOFAlizer new module 
+
+I added your comments (Thanks Jean-Baptiste & Ilkka Ollakka) into the code and split the patches to get an extra patch for the UI. The netcdf4 library is used (newest version is 4.3.0). On Debian/Ubuntu it is sufficent to install the package 'libnetcdf-dev' with the netcdf version 4.1.3. Netcdf 4.0 could also work, but I couldn't test it.
+
+SOFAlizer creates a virtual auditory display, i.e., virtual loudspeakers around the user for listening via headphones. The position of the virtual loudspeakers depends on the audio format of the input file (up to 8.1 supported). SOFAlizer filters audio channels with head-related transfer functions (HRTFs). SOFAlizer uses HRTFs stored in SOFA files (www.sofaconventions.org) following the SimpleFreeFieldHRIR Convention. A database of SOFA files can be found at www.sofacoustics.org.
+With listener-specific HRTFs, the virtual loudspeakers can be rotated and elevated. With near-field HRTFs, the distance between the loudspeakers and the listener can be varied. SOFAlizer allows to load 5 different SOFA files and easily switch between them. The audio channels can also be presented from one of four pre-defined virtual positions.
+SOFAlizer is developed at the Acoustics Research Institute (ARI) of the Austrian Academy of Sciences.
+
+
