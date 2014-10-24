@@ -59,8 +59,26 @@ struct nc_sofa_t
 
 struct filter_sys_t
 {
+    struct nc_sofa_t sofa[N_SOFA];
     vlc_mutex_t lock;
+
     float *p_speaker_pos;
+
+    /* N of Channels to convolute */
+    int i_n_conv;
+
+    /* Buffer variables */
+    float *p_ringbuffer_l;
+    float *p_ringbuffer_r;
+    int i_write;
+    int i_buffer_length;
+
+    /* NetCDF variables */
+    int i_i_sofa;  /* Selected Sofa File */
+    int *p_delay_l;
+    int *p_delay_r;
+    float *p_ir_l;
+    float *p_ir_r;
 
     /* Control variables */
     float f_gain;
@@ -72,23 +90,7 @@ struct filter_sys_t
     int i_switch;
     bool b_mute;
 
-    /* N of Channels to convolute */
-    int i_n_conv;
     bool b_lfe;
-
-    /* Buffer variables */
-    float *p_ringbuffer_l;
-    float *p_ringbuffer_r;
-    int i_write;
-    int i_buffer_length;
-
-    /* NetCDF variables */
-    struct nc_sofa_t sofa[N_SOFA];
-    int i_i_sofa;  /* Selected Sofa File */
-    int *p_delay_l;
-    int *p_delay_r;
-    float *p_ir_l;
-    float *p_ir_r;
 
 };
 
@@ -569,31 +571,31 @@ static int Open( vlc_object_t *p_this )
     if( unlikely( p_sys == NULL ) )
         return VLC_ENOMEM;
 
-    vlc_object_t *p_aout = p_filter->p_parent;
+    vlc_object_t *p_out = p_filter->p_parent;
     char *c_filename[N_SOFA];
     const char *psz_var_names_filename[N_SOFA] = { "sofalizer-filename1", "sofalizer-filename2", "sofalizer-filename3" };
     for ( int i = 0 ; i < N_SOFA ; i++ )
     {
         c_filename[i] = var_CreateGetStringCommand( p_filter, psz_var_names_filename[i] );
     }
-    p_sys->f_rotation   = abs ( ( - (int) var_CreateGetFloat( p_aout, "sofalizer-rotation" ) + 720 ) % 360 );
-    p_sys->i_i_sofa     = (int) (var_CreateGetFloat ( p_aout, "sofalizer-select" ) );
-    p_sys->i_switch     = (int) ( var_CreateGetFloat ( p_aout, "sofalizer-switch" ) );
-    p_sys->f_gain       = var_CreateGetFloat( p_aout, "sofalizer-gain" );
-    p_sys->f_elevation  = var_CreateGetFloat( p_aout, "sofalizer-elevation" );
-    p_sys->f_radius     = var_CreateGetFloat( p_aout, "sofalizer-radius");
+    p_sys->f_rotation   = abs ( ( - (int) var_CreateGetFloat( p_out, "sofalizer-rotation" ) + 720 ) % 360 );
+    p_sys->i_i_sofa     = (int) (var_CreateGetFloat ( p_out, "sofalizer-select" ) ) - 1;
+    p_sys->i_switch     = (int) ( var_CreateGetFloat ( p_out, "sofalizer-switch" ) );
+    p_sys->f_gain       = var_CreateGetFloat( p_out, "sofalizer-gain" );
+    p_sys->f_elevation  = var_CreateGetFloat( p_out, "sofalizer-elevation" );
+    p_sys->f_radius     = var_CreateGetFloat( p_out, "sofalizer-radius");
 
 
     const char *psz_var_names_azimuth_array[N_POSITIONS] = { "sofalizer-pos1-azi" , "sofalizer-pos2-azi", "sofalizer-pos3-azi", "sofalizer-pos4-azi" };
     for ( int i = 0 ; i < N_POSITIONS ; i++ )
     {
-        p_sys->i_azimuth_array[i] = ( var_CreateGetInteger ( p_aout, psz_var_names_azimuth_array[i] ) + 720 ) % 360 ;
+        p_sys->i_azimuth_array[i] = ( var_InheritInteger ( p_out, psz_var_names_azimuth_array[i] ) + 720 ) % 360 ;
     }
 
     const char *psz_var_names_elevation_array[N_POSITIONS] = { "sofalizer-pos1-ele", "sofalizer-pos2-ele", "sofalizer-pos3-ele", "sofalizer-pos4-ele" };
     for ( int i = 0 ; i < N_POSITIONS ; i++ )
     {
-        p_sys->i_elevation_array[i] = var_CreateGetInteger( p_aout, psz_var_names_elevation_array[i] ) ;
+        p_sys->i_elevation_array[i] = var_InheritInteger( p_out, psz_var_names_elevation_array[i] ) ;
     }
 
     int i_samplingrate = 0;
@@ -714,7 +716,7 @@ static int Open( vlc_object_t *p_this )
         return VLC_EGENERIC;
     }
     vlc_mutex_init( &p_sys->lock );
-    if ( LoadIR ( p_filter, p_sys->f_rotation, p_sys->f_elevation, p_sys->f_radius) != VLC_SUCCESS )
+    if ( LoadIR ( p_filter, p_sys->f_rotation, p_sys->f_elevation, p_sys->f_radius ) != VLC_SUCCESS )
     {
         FreeAllSofa( p_filter );
         FreeFilter( p_filter );
@@ -726,12 +728,12 @@ static int Open( vlc_object_t *p_this )
     p_filter->pf_audio_filter = DoWork;
 
     /* Callbacks can call function LoadIR */
-    var_AddCallback( p_aout, "sofalizer-gain", GainCallback, p_filter );
-    var_AddCallback( p_aout, "sofalizer-rotation", RotationCallback, p_filter);
-    var_AddCallback( p_aout, "sofalizer-elevation", ElevationCallback, p_filter );
-    var_AddCallback( p_aout, "sofalizer-switch", SwitchCallback, p_filter );
-    var_AddCallback( p_aout, "sofalizer-select", SelectCallback, p_filter );
-    var_AddCallback( p_aout, "sofalizer-radius", RadiusCallback, p_filter );
+    var_AddCallback( p_out, "sofalizer-gain", GainCallback, p_filter );
+    var_AddCallback( p_out, "sofalizer-rotation", RotationCallback, p_filter );
+    var_AddCallback( p_out, "sofalizer-elevation", ElevationCallback, p_filter );
+    var_AddCallback( p_out, "sofalizer-switch", SwitchCallback, p_filter );
+    var_AddCallback( p_out, "sofalizer-select", SelectCallback, p_filter );
+    var_AddCallback( p_out, "sofalizer-radius", RadiusCallback, p_filter );
 
     return VLC_SUCCESS;
 }
@@ -863,8 +865,8 @@ void sofalizer_Convolute ( void *p_ptr )
 
 /*****************************************************************************
 * LoadIR: Load the impulse responses (reversed) for directions in p_ir_l and
-*     p_ir_r and put the gain on them. Find the correct impulse response with
-*     FindM threads.
+*     p_ir_r and put the applies the gain to them.
+*     Find the correct impulse response with FindM threads.
 * FindM:
 ******************************************************************************/
 
@@ -1067,14 +1069,14 @@ static void Close( vlc_object_t *p_this )
 {
     filter_t *p_filter = ( filter_t* )p_this;
     filter_sys_t *p_sys = p_filter->p_sys;
-    vlc_object_t *p_aout = p_filter->p_parent;
+    vlc_object_t *p_out = p_filter->p_parent;
 
-    var_DelCallback( p_aout, "sofalizer-gain", GainCallback, p_filter );
-    var_DelCallback( p_aout, "sofalizer-rotation", RotationCallback, p_filter );
-    var_DelCallback( p_aout, "sofalizer-elevation", ElevationCallback, p_filter );
-    var_DelCallback( p_aout, "sofalizer-switch", SwitchCallback, p_filter );
-    var_DelCallback( p_aout, "sofalizer-select", SelectCallback, p_filter );
-    var_DelCallback( p_aout, "sofalizer-radius", RadiusCallback, p_filter );
+    var_DelCallback( p_out, "sofalizer-gain", GainCallback, p_filter );
+    var_DelCallback( p_out, "sofalizer-rotation", RotationCallback, p_filter );
+    var_DelCallback( p_out, "sofalizer-elevation", ElevationCallback, p_filter );
+    var_DelCallback( p_out, "sofalizer-switch", SwitchCallback, p_filter );
+    var_DelCallback( p_out, "sofalizer-select", SelectCallback, p_filter );
+    var_DelCallback( p_out, "sofalizer-radius", RadiusCallback, p_filter );
 
     vlc_mutex_destroy( &p_sys->lock );
 
