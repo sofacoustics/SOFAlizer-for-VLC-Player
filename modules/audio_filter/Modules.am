@@ -8,7 +8,24 @@ SOURCES_param_eq = param_eq.c
 SOURCES_scaletempo = scaletempo.c
 SOURCES_chorus_flanger = chorus_flanger.c
 SOURCES_stereo_widen = stereo_widen.c
-SOURCES_sofalizer = sofalizer.c
+SOURCES_sofalizer = \
+	sofalizer/sofalizer.c \
+	sofalizer/fft/fft.c sofalizer/fft/fft.h \
+	sofalizer/fft/wmafixed.c sofalizer/fft/wmafixed.h \
+	sofalizer/fft/wmadec.h \
+	sofalizer/fft/asf.h \
+	sofalizer/fft/bitstream.h \
+	sofalizer/fft/bswap.h \
+	sofalizer/fft/mdct.h \
+	sofalizer/resampling/samplerate.c sofalizer/resampling/samplerate.h \
+	sofalizer/resampling/src_sinc.c \
+	sofalizer/resampling/fastest_coeffs.h \
+	sofalizer/resampling/mid_qual_coeffs.h \
+	sofalizer/resampling/high_qual_coeffs.h \
+	sofalizer/resampling/float_cast.h \
+	sofalizer/resampling/common.h \
+	sofalizer/resampling/src_linear.c \
+	sofalizer/resampling/src_zoh.c
 SOURCES_spatializer = \
 	spatializer/allpass.cpp spatializer/allpass.hpp \
 	spatializer/comb.cpp spatializer/comb.hpp \
