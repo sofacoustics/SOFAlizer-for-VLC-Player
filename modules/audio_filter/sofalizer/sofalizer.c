@@ -1066,9 +1066,12 @@ static int LoadIR ( filter_t *p_filter, int i_azim, int i_elev, float f_radius)
     int i_input_nb = aout_FormatNbChannels( &p_filter->fmt_in.audio ); /* no. input channels */
     float f_gain_lin = exp( (p_sys->f_gain - 3 * i_input_nb) / 20 * log(10)); /* GUI gain - 3dB/channel */
 
-    /* get IR pointers for each L and R channel */
-    float *p_ir_l = p_sys->p_ir_l;
-    float *p_ir_r = p_sys->p_ir_r;
+    /* get temporary IR memory for L and R channel */
+    float *p_ir_l = malloc( sizeof( float ) * i_n_conv * i_n_samples );
+    float *p_ir_r = malloc( sizeof( float ) * i_n_conv * i_n_samples );
+    if( !p_ir_l || !p_ir_r )
+        return VLC_ENOMEM; /* memory allocation failed */
+
     int i_offset = 0; /* used for faster pointer arithmetics in for-loop */
 
     int i_m[p_sys->i_n_conv]; /* measurement index m of IR closest to required source positions */
@@ -1105,9 +1108,15 @@ static int LoadIR ( filter_t *p_filter, int i_azim, int i_elev, float f_radius)
 
     /* copy IRs and delays to allocated memory in the filter_sys_t struct: */
     vlc_mutex_lock( &p_sys->lock );
+    memcpy ( p_sys->p_ir_l, p_ir_l, sizeof( float ) * i_n_conv * i_n_samples );
+    memcpy ( p_sys->p_ir_r, p_ir_r, sizeof( float ) * i_n_conv * i_n_samples );
     memcpy ( p_sys->p_delay_l , &i_delay_l[0] , sizeof( int ) * p_sys->i_n_conv );
     memcpy ( p_sys->p_delay_r , &i_delay_r[0] , sizeof( int ) * p_sys->i_n_conv );
     vlc_mutex_unlock( &p_sys->lock );
+
+    free( p_ir_l ); /* free temporary IR memory */
+    free( p_ir_r );
+
     return VLC_SUCCESS;
 }
 
