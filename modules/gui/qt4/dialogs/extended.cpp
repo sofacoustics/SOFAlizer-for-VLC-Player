@@ -2,7 +2,7 @@
  * extended.cpp : Extended controls - Undocked
  ****************************************************************************
  * Copyright (C) 2006-2008 the VideoLAN team
- * $Id: 804fce925c399d76b3cfd88a5ea033424699d26e $
+ * $Id: 83da4181b0afb8d0ed1d0bf84b171643ae3eea55 $
  *
  * Authors: Clément Stenac <zorglub@videolan.org>
  *          Jean-Baptiste Kempf <jb@videolan.org>
@@ -70,7 +70,7 @@ ExtendedDialog::ExtendedDialog( intf_thread_t *_p_intf )
     audioTab->addTab( spatial, qtr( "Spatializer" ) );
     audioLayout->addWidget( audioTab );
 
-    Sofalizer *sofalizer = new Sofalizer( p_intf, audioTab);
+    Sofalizer *sofalizer = new Sofalizer( p_intf, audioTab );
     audioTab->addTab( sofalizer, qtr( "SOFAlizer" ) );
 
     mainTabW->insertTab( AUDIO_TAB, audioWidget, qtr( "Audio Effects" ) );
