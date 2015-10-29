@@ -65,34 +65,34 @@
  * Local prototypes
  *****************************************************************************/
 
-struct nc_sofa_t /* contains data of one SOFA file */
+struct nc_sofa_s /* contains data of one SOFA file */
 {
    int i_ncid; /* netCDF ID of the opened SOFA file */
    int i_n_samples; /* length of one impulse response (IR) */
    int i_m_dim; /* number of measurement positions */
-   int *p_data_delay; /* broadband delay of each IR */
+   int *pi_data_delay; /* broadband delay of each IR */
    /* all measurement positions for each receiver (i.e. ear): */
-   float *p_sp_a; /* azimuth angles */
-   float *p_sp_e; /* elevation angles */
-   float *p_sp_r; /* radii */
+   float *pf_sp_a; /* azimuth angles */
+   float *pf_sp_e; /* elevation angles */
+   float *pf_sp_r; /* radii */
    /* dataat at each measurement position for each receiver: */
-   float *p_data_ir; /* IRs (time-domain) */
+   float *pf_data_ir; /* IRs (time-domain) */
 };
 
 struct filter_sys_t /* field of struct filter_t, which describes the filter */
 {
-    struct nc_sofa_t sofa[N_SOFA]; /* contains data of the SOFA files */
+    struct nc_sofa_s sofa[N_SOFA]; /* contains data of the SOFA files */
 
     /*  mutually exclusive lock */
     vlc_mutex_t lock; /* avoid interference by simultaneous threads */
 
-    float *p_speaker_pos; /* positions of the virtual loudspekaers */
+    float *pf_speaker_pos; /* positions of the virtual loudspekaers */
 
     int i_n_conv; /* number of channels to convolute */
 
     /* buffer variables (for convolution) */
-    float *p_ringbuffer_l; /* buffers input samples, length of one buffer: */
-    float *p_ringbuffer_r; /* no. input ch. (incl. LFE) x i_buffer_length */
+    float *pf_ringbuffer_l; /* buffers input samples, length of one buffer: */
+    float *pf_ringbuffer_r; /* no. input ch. (incl. LFE) x i_buffer_length */
     int i_write; /* current write position to ringbuffer */
     int i_buffer_length; /* is: longest IR plus max. delay in all SOFA files */
                          /* then choose next power of 2 */
@@ -105,11 +105,11 @@ struct filter_sys_t /* field of struct filter_t, which describes the filter */
     kiss_fft_cfg p_ifft_cfg;
 
     /* netCDF variables */
-    int i_i_sofa;  /* selected SOFA file (zero-based; unlike GUI "Select"!) */
-    int *p_delay_l; /* broadband delay for each channel/IR to be convolved */
-    int *p_delay_r;
-    float *p_data_ir_l; /* IRs for all channels to be convolved */
-    float *p_data_ir_r; /* (this excludes the LFE) */
+    int i_sofa_id;  /* selected SOFA file (zero-based; unlike GUI "Select"!) */
+    int *pi_delay_l; /* broadband delay for each channel/IR to be convolved */
+    int *pi_delay_r;
+    float *pf_data_ir_l; /* IRs for all channels to be convolved */
+    float *pf_data_ir_r; /* (this excludes the LFE) */
     kiss_fft_cpx *p_data_hrtf_l; /* HRTFs for all channels to be convolved */
     kiss_fft_cpx *p_data_hrtf_r; /* (this excludes the LFE) */
 
@@ -123,8 +123,8 @@ struct filter_sys_t /* field of struct filter_t, which describes the filter */
                   /* user's rotation and elevation settings on GUI, */
                   /* 1-4: virtual source pos. defined in advanced settings */
     /* - from advanced settings: virtual source positions: */
-    int i_azimuth_array[N_POSITIONS]; /* azimuth angles (in deg.) */
-    int i_elevation_array[N_POSITIONS]; /* elevation angles (in deg.) */
+    int pi_azimuth_array[N_POSITIONS]; /* azimuth angles (in deg.) */
+    int pi_elevation_array[N_POSITIONS]; /* elevation angles (in deg.) */
     int i_processing_type; /* type of audio processing algorithm used */
     int i_resampling_type; /* quality of libsamplerate conversion */
 
@@ -132,38 +132,38 @@ struct filter_sys_t /* field of struct filter_t, which describes the filter */
     bool b_lfe; /* whether or not the LFE channel is used */
 };
 
-struct t_thread_data /* data for audio processing of one output channel */
+struct thread_data_s /* data for audio processing of one output channel */
 {
     filter_sys_t *p_sys; /* contains the filter data (see above) */
     block_t *p_in_buf; /* contains input samples buffer and information */
-    int *p_input_nb; /* points to i_input_nb (no. input ch. incl. LFE) */
-    int *p_delay; /* broadband delay for each IR to be convolved */
+    int *pi_input_nb; /* points to i_input_nb (no. input ch. incl. LFE) */
+    int *pi_delay; /* broadband delay for each IR to be convolved */
     int i_write; /* current write position to ringbuffer */
-    int *p_n_clippings; /* points to clippings counter (output samples >= 1) */
-    float *p_ringbuffer; /* buffers input samples, see struct filter_sys_t */
-    float *p_dest; /* points to output samples buffer (p_out_buf->p_buffer) */
+    int *pi_n_clippings; /* points to clippings counter (output samples >= 1) */
+    float *pf_ringbuffer; /* buffers input samples, see struct filter_sys_t */
+    float *pf_dest; /* points to output samples buffer (p_out_buf->p_buffer) */
                    /* (samples of L and R channel are alternating in memory) */
-    float *p_data; /* IRs/HRTFs for all channels to be convolved (excl. LFE) */
+    float *pf_data; /* IRs/HRTFs for all channels to be convolved (excl. LFE) */
     float f_gain_lfe; /* LFE gain: gain (GUI) -6dB -3dB/ch., linear, not dB */
 };
 
 /* constants for audio processing type menu (in advanced settings) */
-static const int processing_type_values[] =
+static const int pi_processing_type_values[] =
 {
     PROC_TIME_DOM, PROC_FREQ_DOM,
 };
-static const char *const processing_type_texts[] =
+static const char *const psz_processing_type_texts[] =
 {
     N_("Time-domain convolution"), N_("Fast Convolution"),
 };
 
 /* constants for resampling quality menu (in advanced settings) */
-static const int resampling_type_values[] =
+static const int pi_resampling_type_values[] =
 {
     SRC_SINC_BEST_QUALITY, SRC_SINC_MEDIUM_QUALITY, SRC_SINC_FASTEST,
     SRC_ZERO_ORDER_HOLD, SRC_LINEAR,
 };
-static const char *const resampling_type_texts[] =
+static const char *const psz_resampling_type_texts[] =
     {
     N_("Sinc function (best quality)"), N_("Sinc function (medium quality)"),
     N_("Sinc function (fast)"), N_("Zero Order Hold (fastest)"),
@@ -194,7 +194,7 @@ static int FindM ( filter_sys_t *p_sys, int i_azim, int i_elev, float f_radius )
 
 #define FILE_NAME_LONGTEXT N_( "Three different SOFA files can be specified and used for instant comparison during playback." )
 
-#define SELECT_VALUE_TEXT N_( "Use SOFA file number:" )
+#define SELECT_VALUE_TEXT N_( "Select SOFA file used for rendering:" )
 #define SELECT_VALUE_LONGTEXT N_( "SOFAlizer allows to load 3 different SOFA files and easily switch between them for better comparison." )
 
 #define ROTATION_VALUE_TEXT N_( "Rotation (in deg)" )
@@ -247,12 +247,12 @@ vlc_module_begin ()
     add_integer_with_range( "sofalizer-pos3-ele", 0, -90, 90, POS3_ELEVATION_VALUE_TEXT, POS_VALUE_LONGTEXT, false )
     add_integer_with_range( "sofalizer-pos4-azi", 0, -180, 180, POS4_AZIMUTH_VALUE_TEXT, POS_VALUE_LONGTEXT, false )
     add_integer_with_range( "sofalizer-pos4-ele", 90, -90, 90, POS4_ELEVATION_VALUE_TEXT, POS_VALUE_LONGTEXT, false )
-    add_integer ("sofalizer-processing-type", 0,
+    add_integer ("sofalizer-processing-type", 1,
         PROCESSING_TYPE_VALUE_TEXT, PROCESSING_TYPE_VALUE_LONGTEXT, true)
-    change_integer_list (processing_type_values, processing_type_texts)
+    change_integer_list (pi_processing_type_values, psz_processing_type_texts)
     add_integer ("sofalizer-resampling-type", SRC_SINC_FASTEST,
         RESAMPLING_TYPE_VALUE_TEXT, RESAMPLING_TYPE_VALUE_LONGTEXT, true)
-    change_integer_list (resampling_type_values, resampling_type_texts)
+    change_integer_list (pi_resampling_type_values, psz_resampling_type_texts)
     add_shortcut( "sofalizer" )
     set_category( CAT_AUDIO )
     set_subcategory( SUBCAT_AUDIO_AFILTER )
@@ -271,20 +271,20 @@ vlc_module_end ()
 * FreeFilter: Frees Memory allocated in Open
 ******************************************************************************/
 
-static int CloseSofa ( struct nc_sofa_t *sofa )
+static int CloseSofa ( struct nc_sofa_s *sofa )
 {   /* close given SOFA file and free associated memory: */
-    free( sofa->p_data_delay );
-    free( sofa->p_sp_a );
-    free( sofa->p_sp_e );
-    free( sofa->p_sp_r );
-    free( sofa->p_data_ir );
+    free( sofa->pi_data_delay );
+    free( sofa->pf_sp_a );
+    free( sofa->pf_sp_e );
+    free( sofa->pf_sp_r );
+    free( sofa->pf_data_ir );
     nc_close( sofa->i_ncid );
     sofa->i_ncid = 0;
     return VLC_SUCCESS;
 }
 
-static int LoadSofa ( filter_t *p_filter, char *c_filename, /* loads one file*/
-                      int i_i_sofa , int *p_samplingrate)
+static int LoadSofa ( filter_t *p_filter, char *psz_filename, /* loads one file*/
+                      int i_sofa_id , int *p_samplingrate)
 {
     struct filter_sys_t *p_sys = p_filter->p_sys;
     /* variables associated with content of SOFA file: */
@@ -292,27 +292,27 @@ static int LoadSofa ( filter_t *p_filter, char *c_filename, /* loads one file*/
     unsigned int i_samplingrate;
     int i_n_samples = 0;
     int i_m_dim = 0;
-    p_sys->sofa[i_i_sofa].i_ncid = 0;
-    i_status = nc_open( c_filename , NC_NOWRITE, &i_ncid); /* open SOFA file read-only */
+    p_sys->sofa[i_sofa_id].i_ncid = 0;
+    i_status = nc_open( psz_filename , NC_NOWRITE, &i_ncid); /* open SOFA file read-only */
     if (i_status != NC_NOERR)
     {
-        msg_Err(p_filter, "Can't find SOFA-file '%s'", c_filename);
+        msg_Err(p_filter, "Can't find SOFA-file '%s'", psz_filename);
         return VLC_EGENERIC;
     }
     /* get number of dimensions, vars, global attributes and Id of unlimited dimensions: */
     nc_inq(i_ncid, &i_n_dims, &i_n_vars, &i_n_gatts, &i_n_unlim_dim_id);
 
     /* -- get number of measurements ("M") and length of one IR ("N") -- */
-    char c_dim_names[i_n_dims][NC_MAX_NAME];   /* names of netCDF dimensions */
-    uint32_t i_dim_length[i_n_dims]; /* lengths of netCDF dimensions */
+    char psz_dim_names[i_n_dims][NC_MAX_NAME];   /* names of netCDF dimensions */
+    uint32_t pi_dim_length[i_n_dims]; /* lengths of netCDF dimensions */
     int i_m_dim_id = -1;
     int i_n_dim_id = -1;
     for( int i = 0; i < i_n_dims; i++ ) /* go through all dimensions of file */
     {
-        nc_inq_dim( i_ncid, i, c_dim_names[i], &i_dim_length[i] ); /* get dimensions */
-        if ( !strncmp("M", c_dim_names[i], 1 ) ) /* get ID of dimension "M" */
+        nc_inq_dim( i_ncid, i, psz_dim_names[i], &pi_dim_length[i] ); /* get dimensions */
+        if ( !strncmp("M", psz_dim_names[i], 1 ) ) /* get ID of dimension "M" */
             i_m_dim_id = i;
-        if ( !strncmp("N", c_dim_names[i], 1 ) ) /* get ID of dimension "N" */
+        if ( !strncmp("N", psz_dim_names[i], 1 ) ) /* get ID of dimension "N" */
             i_n_dim_id = i;
     }
     if( ( i_m_dim_id == -1 ) || ( i_n_dim_id == -1 ) ) /* dimension "M" or "N" couldn't be found */
@@ -321,8 +321,8 @@ static int LoadSofa ( filter_t *p_filter, char *c_filename, /* loads one file*/
         nc_close(i_ncid);
         return VLC_EGENERIC;
     }
-    i_n_samples = i_dim_length[i_n_dim_id]; /* get number of measurements */
-    i_m_dim =  i_dim_length[i_m_dim_id]; /* get length of one IR */
+    i_n_samples = pi_dim_length[i_n_dim_id]; /* get number of measurements */
+    i_m_dim =  pi_dim_length[i_m_dim_id]; /* get length of one IR */
 
     /* -- check file type -- */
     uint32_t i_att_len; /* get length of attritube "Conventions" */
@@ -368,25 +368,25 @@ static int LoadSofa ( filter_t *p_filter, char *c_filename, /* loads one file*/
     *p_samplingrate = i_samplingrate; /* remember sampling rate */
 
     /* -- allocate memory for one value for each measurement position: -- */
-    float *p_sp_a = p_sys->sofa[i_i_sofa].p_sp_a = malloc( sizeof(float) * i_m_dim);
-    float *p_sp_e = p_sys->sofa[i_i_sofa].p_sp_e = malloc( sizeof(float) * i_m_dim);
-    float *p_sp_r = p_sys->sofa[i_i_sofa].p_sp_r = malloc( sizeof(float) * i_m_dim);
+    float *pf_sp_a = p_sys->sofa[i_sofa_id].pf_sp_a = malloc( sizeof(float) * i_m_dim);
+    float *pf_sp_e = p_sys->sofa[i_sofa_id].pf_sp_e = malloc( sizeof(float) * i_m_dim);
+    float *pf_sp_r = p_sys->sofa[i_sofa_id].pf_sp_r = malloc( sizeof(float) * i_m_dim);
     /* delay and IR values required for each ear and measurement position: */
-    int *p_data_delay = p_sys->sofa[i_i_sofa].p_data_delay =
+    int *pi_data_delay = p_sys->sofa[i_sofa_id].pi_data_delay =
         calloc ( i_m_dim * 2, sizeof( int ) );
-    float *p_data_ir = p_sys->sofa[i_i_sofa].p_data_ir =
+    float *pf_data_ir = p_sys->sofa[i_sofa_id].pf_data_ir =
         malloc( sizeof( float ) * 2 * i_m_dim * i_n_samples );
 
-    if ( !p_data_delay || !p_sp_a || !p_sp_e || !p_sp_r || !p_data_ir )
+    if ( !pi_data_delay || !pf_sp_a || !pf_sp_e || !pf_sp_r || !pf_data_ir )
     {   /* if memory could not be allocated */
-        CloseSofa( &p_sys->sofa[i_i_sofa] );
+        CloseSofa( &p_sys->sofa[i_sofa_id] );
         return VLC_ENOMEM;
     }
 
     /* get impulse responses (HRTFs): */
     int i_data_ir_id; /* get corresponding ID */
     i_status = nc_inq_varid( i_ncid, "Data.IR", &i_data_ir_id);
-    i_status += nc_get_var_float( i_ncid, i_data_ir_id, p_data_ir ); /* read and store IRs */
+    i_status += nc_get_var_float( i_ncid, i_data_ir_id, pf_data_ir ); /* read and store IRs */
     if ( i_status != NC_NOERR )
     {
         msg_Err( p_filter, "Couldn't read Data.IR!" );
@@ -397,25 +397,25 @@ static int LoadSofa ( filter_t *p_filter, char *c_filename, /* loads one file*/
     int i_sp_id;
     i_status = nc_inq_varid(i_ncid, "SourcePosition", &i_sp_id); /* get corresponding ID */
     i_status += nc_get_vara_float (i_ncid, i_sp_id, (uint32_t[2]){ 0 , 0 } ,
-                (uint32_t[2]){ i_m_dim , 1 } , p_sp_a ); /* read & store azimuth angles */
+                (uint32_t[2]){ i_m_dim , 1 } , pf_sp_a ); /* read & store azimuth angles */
     i_status += nc_get_vara_float (i_ncid, i_sp_id, (uint32_t[2]){ 0 , 1 } ,
-                (uint32_t[2]){ i_m_dim , 1 } , p_sp_e ); /* read & store elevation angles */
+                (uint32_t[2]){ i_m_dim , 1 } , pf_sp_e ); /* read & store elevation angles */
     i_status += nc_get_vara_float (i_ncid, i_sp_id, (uint32_t[2]){ 0 , 2 } ,
-                (uint32_t[2]){ i_m_dim , 1 } , p_sp_r ); /* read & store radii */
+                (uint32_t[2]){ i_m_dim , 1 } , pf_sp_r ); /* read & store radii */
     if (i_status != NC_NOERR) /* if any source position variable coudn't be read */
     {
         msg_Err(p_filter, "Couldn't read SourcePosition.");
         goto error;
     }
 
-    /* read Data.Delay, check for errors and fit it to p_data_delay */
+    /* read Data.Delay, check for errors and fit it to pi_data_delay */
     int i_data_delay_id;
-    int i_data_delay_dim_id[2];
+    int pi_data_delay_dim_id[2];
     char psz_data_delay_dim_name[NC_MAX_NAME];
 
     i_status = nc_inq_varid(i_ncid, "Data.Delay", &i_data_delay_id);
-    i_status += nc_inq_vardimid ( i_ncid, i_data_delay_id, &i_data_delay_dim_id[0]);
-    i_status += nc_inq_dimname ( i_ncid, i_data_delay_dim_id[0], psz_data_delay_dim_name );
+    i_status += nc_inq_vardimid ( i_ncid, i_data_delay_id, &pi_data_delay_dim_id[0]);
+    i_status += nc_inq_dimname ( i_ncid, pi_data_delay_dim_id[0], psz_data_delay_dim_name );
     if (i_status != NC_NOERR)
     {
         msg_Err(p_filter, "Couldn't read Data.Delay." );
@@ -427,18 +427,18 @@ static int LoadSofa ( filter_t *p_filter, char *c_filename, /* loads one file*/
     if ( !strncmp ( psz_data_delay_dim_name, "I", 2 ) )
     { /* check 2 characters to assure string is 0-terminated after "I" */
         msg_Dbg ( p_filter, "Data.Delay has dimension [I R]" );
-        int i_Delay[2]; /* delays get from SOFA file: */
-        i_status = nc_get_var_int( i_ncid, i_data_delay_id, &i_Delay[0] );
+        int pi_Delay[2]; /* delays get from SOFA file: */
+        i_status = nc_get_var_int( i_ncid, i_data_delay_id, &pi_Delay[0] );
         if ( i_status != NC_NOERR )
         {
             msg_Err(p_filter, "Couldn't read Data.Delay");
             goto error;
         }
-        int *p_data_delay_r = p_data_delay + i_m_dim;
+        int *pi_data_delay_r = pi_data_delay + i_m_dim;
         for ( int i = 0 ; i < i_m_dim ; i++ ) /* extend given dimension [I R] to [M R] */
         { /* assign constant delay value for all measurements to data_delay fields */
-            *( p_data_delay + i ) = i_Delay[0];
-            *( p_data_delay_r + i ) = i_Delay[1];
+            *( pi_data_delay + i ) = pi_Delay[0];
+            *( pi_data_delay_r + i ) = pi_Delay[1];
         }
     }
       /* dimension of Data.Delay is [M R] */
@@ -446,7 +446,7 @@ static int LoadSofa ( filter_t *p_filter, char *c_filename, /* loads one file*/
     {
         msg_Dbg( p_filter, "Data.Delay in dimension [M R]");
         /* get delays from SOFA file: */
-        i_status = nc_get_var_int( i_ncid, i_data_delay_id, p_data_delay );
+        i_status = nc_get_var_int( i_ncid, i_data_delay_id, pi_data_delay );
         if (i_status != NC_NOERR)
         {
             msg_Err(p_filter, "Couldn't read Data.Delay");
@@ -461,23 +461,23 @@ static int LoadSofa ( filter_t *p_filter, char *c_filename, /* loads one file*/
     }
 
     /* save information in SOFA struct: */
-    p_sys->sofa[i_i_sofa].i_m_dim = i_m_dim; /* no. measurement positions */
-    p_sys->sofa[i_i_sofa].i_n_samples = i_n_samples; /* length on one IR */
-    p_sys->sofa[i_i_sofa].i_ncid = i_ncid; /* netCDF ID of SOFA file */
+    p_sys->sofa[i_sofa_id].i_m_dim = i_m_dim; /* no. measurement positions */
+    p_sys->sofa[i_sofa_id].i_n_samples = i_n_samples; /* length on one IR */
+    p_sys->sofa[i_sofa_id].i_ncid = i_ncid; /* netCDF ID of SOFA file */
     nc_close(i_ncid); /* close SOFA file */
 
     return VLC_SUCCESS;
 
 error:
-    CloseSofa( &p_sys->sofa[i_i_sofa] );
+    CloseSofa( &p_sys->sofa[i_sofa_id] );
     return VLC_EGENERIC;
 }
 
-static int GetSpeakerPos ( filter_t *p_filter, float *p_speaker_pos )
+static int GetSpeakerPos ( filter_t *p_filter, float *pf_speaker_pos )
 {
     /* get input channel configuration: */
     uint16_t i_physical_channels = p_filter->fmt_in.audio.i_physical_channels;
-    float *p_pos_temp;
+    float *pf_pos_temp;
     int i_input_nb = aout_FormatNbChannels( &p_filter->fmt_in.audio ); /* get no. input channels */
     int i_n_conv = i_input_nb;
     if ( i_physical_channels & AOUT_CHAN_LFE ) /* if LFE is used */
@@ -488,44 +488,44 @@ static int GetSpeakerPos ( filter_t *p_filter, float *p_speaker_pos )
     /* set speaker positions according to input channel configuration: */
     switch ( i_physical_channels )
     {
-    case AOUT_CHAN_CENTER:  p_pos_temp = (float[1]){ 0 };
+    case AOUT_CHAN_CENTER:  pf_pos_temp = (float[1]){ 0 };
                             break;
     case AOUT_CHANS_STEREO:
-    case AOUT_CHANS_2_1:    p_pos_temp = (float[2]){ 30 , 330 };
+    case AOUT_CHANS_2_1:    pf_pos_temp = (float[2]){ 30 , 330 };
                             break;
     case AOUT_CHANS_3_0:
-    case AOUT_CHANS_3_1:    p_pos_temp = (float[3]){ 30 , 330 , 0 };
+    case AOUT_CHANS_3_1:    pf_pos_temp = (float[3]){ 30 , 330 , 0 };
                             break;
     case AOUT_CHANS_4_0:
-    case AOUT_CHANS_4_1:    p_pos_temp = (float[4]){ 30 , 330 , 120 , 240 };
+    case AOUT_CHANS_4_1:    pf_pos_temp = (float[4]){ 30 , 330 , 120 , 240 };
                             break;
     case AOUT_CHANS_5_0:
     case AOUT_CHANS_5_1:
     case ( AOUT_CHANS_5_0_MIDDLE | AOUT_CHAN_LFE ):
-    case AOUT_CHANS_5_0_MIDDLE: p_pos_temp = (float[5]){ 30 , 330 , 120 , 240 , 0 };
+    case AOUT_CHANS_5_0_MIDDLE: pf_pos_temp = (float[5]){ 30 , 330 , 120 , 240 , 0 };
                                 break;
-    case AOUT_CHANS_6_0:    p_pos_temp = (float[6]){ 30 , 330 , 90 , 270 , 150 , 210 };
+    case AOUT_CHANS_6_0:    pf_pos_temp = (float[6]){ 30 , 330 , 90 , 270 , 150 , 210 };
                             break;
     case AOUT_CHANS_7_0:
-    case AOUT_CHANS_7_1:    p_pos_temp = (float[7]){ 30 , 330 , 90 , 270 , 150 , 210 , 0 };
+    case AOUT_CHANS_7_1:    pf_pos_temp = (float[7]){ 30 , 330 , 90 , 270 , 150 , 210 , 0 };
                             break;
-    case AOUT_CHANS_8_1:    p_pos_temp = (float[8]){ 30 , 330 , 90 , 270 , 150 , 210 , 180 , 0 };
+    case AOUT_CHANS_8_1:    pf_pos_temp = (float[8]){ 30 , 330 , 90 , 270 , 150 , 210 , 180 , 0 };
                             break;
     default: return VLC_EGENERIC;
              break;
     }
-    memcpy( p_speaker_pos , p_pos_temp , i_n_conv * sizeof( float ) );
+    memcpy( pf_speaker_pos , pf_pos_temp , i_n_conv * sizeof( float ) );
     return VLC_SUCCESS;
 
 }
 
-static int MaxDelay ( struct nc_sofa_t *sofa )
+static int MaxDelay ( struct nc_sofa_s *sofa )
 {
     int i_max = 0;
     for ( int  i = 0; i < ( sofa->i_m_dim * 2 ) ; i++ )
     {   /* search maximum delay in given SOFA file */
-        if ( *( sofa->p_data_delay + i ) > i_max )
-            i_max = *( sofa->p_data_delay + i) ;
+        if ( *( sofa->pi_data_delay + i ) > i_max )
+            i_max = *( sofa->pi_data_delay + i) ;
     }
     return i_max;
 }
@@ -535,8 +535,8 @@ static int CompensateVolume( filter_t *p_filter)
     struct filter_sys_t *p_sys = p_filter->p_sys;
     float f_energy = 0;
     int i_m;
-    int i_i_sofa_backup = p_sys->i_i_sofa;
-    float *p_ir;
+    int i_sofa_id_backup = p_sys->i_sofa_id;
+    float *pf_ir;
     float f_compensate;
     /* compensate volume for each SOFA file */
     for ( int i = 0 ; i < N_SOFA ; i++ ) /* go through all SOFA files */
@@ -544,25 +544,25 @@ static int CompensateVolume( filter_t *p_filter)
         if( p_sys->sofa[i].i_ncid )
         {
             /* find IR at front center position in i-th SOFA file (IR closest to 0°,0°,1m) */
-            struct nc_sofa_t *p_sofa = &p_sys->sofa[i];
-            p_sys->i_i_sofa = i;
+            struct nc_sofa_s *p_sofa = &p_sys->sofa[i];
+            p_sys->i_sofa_id = i;
             i_m = FindM( p_sys, 0, 0, 1 );
             /* get energy of that IR and compensate volume */
-            p_ir = p_sofa->p_data_ir + 2 * i_m * p_sofa->i_n_samples;
+            pf_ir = p_sofa->pf_data_ir + 2 * i_m * p_sofa->i_n_samples;
             for ( int j = 0 ; j < p_sofa->i_n_samples ; j ++ )
             {
-                f_energy += *( p_ir + j ) * *(p_ir + j );
+                f_energy += *( pf_ir + j ) * *(pf_ir + j );
             }
             f_compensate = 256 / ( p_sofa->i_n_samples * sqrt( f_energy ) );
             msg_Dbg( p_filter, "Compensate-factor: %f", f_compensate );
-            p_ir = p_sofa->p_data_ir;
+            pf_ir = p_sofa->pf_data_ir;
             for ( int j = 0 ; j < ( p_sofa->i_n_samples * p_sofa->i_m_dim * 2 ) ; j++ )
             {
-                *( p_ir + j ) *= f_compensate; /* apply volume compensation to IRs */
+                *( pf_ir + j ) *= f_compensate; /* apply volume compensation to IRs */
             }
         }
     }
-    p_sys->i_i_sofa = i_i_sofa_backup;
+    p_sys->i_sofa_id = i_sofa_id_backup;
     return VLC_SUCCESS;
 }
 
@@ -574,11 +574,11 @@ static void FreeAllSofa ( filter_t *p_filter )
     {
         if ( p_sys->sofa[i].i_ncid )
         {
-            free( p_sys->sofa[i].p_sp_a );
-            free( p_sys->sofa[i].p_sp_e );
-            free( p_sys->sofa[i].p_sp_r );
-            free( p_sys->sofa[i].p_data_delay );
-            free( p_sys->sofa[i].p_data_ir );
+            free( p_sys->sofa[i].pf_sp_a );
+            free( p_sys->sofa[i].pf_sp_e );
+            free( p_sys->sofa[i].pf_sp_r );
+            free( p_sys->sofa[i].pi_data_delay );
+            free( p_sys->sofa[i].pf_data_ir );
         }
     }
 }
@@ -586,15 +586,15 @@ static void FreeAllSofa ( filter_t *p_filter )
 static void FreeFilter( filter_t *p_filter )
 {
     filter_sys_t *p_sys = p_filter->p_sys;
-    free( p_sys->p_delay_l );
-    free( p_sys->p_delay_r );
-    free( p_sys->p_data_ir_l );
-    free( p_sys->p_data_ir_r );
+    free( p_sys->pi_delay_l );
+    free( p_sys->pi_delay_r );
+    free( p_sys->pf_data_ir_l );
+    free( p_sys->pf_data_ir_r );
     free( p_sys->p_data_hrtf_l );
     free( p_sys->p_data_hrtf_r );
-    free( p_sys->p_ringbuffer_l );
-    free( p_sys->p_ringbuffer_r );
-    free( p_sys->p_speaker_pos );
+    free( p_sys->pf_ringbuffer_l );
+    free( p_sys->pf_ringbuffer_r );
+    free( p_sys->pf_speaker_pos );
     free( p_sys->p_fft_cfg );
     free( p_sys->p_ifft_cfg );
     free( p_sys );
@@ -605,10 +605,10 @@ static void FreeFilter( filter_t *p_filter )
 ******************************************************************************/
 
 static int GainCallback( vlc_object_t *p_this, char const *psz_var,
-                          vlc_value_t oldval, vlc_value_t newval, void *p_data )
+                          vlc_value_t oldval, vlc_value_t newval, void *pf_data )
 {
     VLC_UNUSED(psz_var); VLC_UNUSED(oldval);
-    filter_t *p_filter = (filter_t *)p_data;
+    filter_t *p_filter = (filter_t *)pf_data;
     filter_sys_t *p_sys = p_filter->p_sys;
     vlc_mutex_lock( &p_sys->lock );
     p_sys->f_gain = newval.f_float;
@@ -620,10 +620,10 @@ static int GainCallback( vlc_object_t *p_this, char const *psz_var,
 }
 
 static int RotationCallback( vlc_object_t *p_this, char const *psz_var,
-                          vlc_value_t oldval, vlc_value_t newval, void *p_data)
+                          vlc_value_t oldval, vlc_value_t newval, void *pf_data)
 {
     VLC_UNUSED(psz_var); VLC_UNUSED(oldval);
-    filter_t *p_filter = (filter_t *)p_data;
+    filter_t *p_filter = (filter_t *)pf_data;
     filter_sys_t *p_sys = p_filter->p_sys;
     float f_temp= (int) (- newval.f_float + 720 ) % 360  ;
     vlc_mutex_lock( &p_sys->lock );
@@ -636,10 +636,10 @@ static int RotationCallback( vlc_object_t *p_this, char const *psz_var,
 }
 
 static int ElevationCallback( vlc_object_t *p_this, char const *psz_var,
-                          vlc_value_t oldval, vlc_value_t newval, void *p_data )
+                          vlc_value_t oldval, vlc_value_t newval, void *pf_data )
 {
     VLC_UNUSED(psz_var); VLC_UNUSED(oldval);
-    filter_t *p_filter = (filter_t *)p_data;
+    filter_t *p_filter = (filter_t *)pf_data;
     filter_sys_t *p_sys = p_filter->p_sys;
     vlc_mutex_lock( &p_sys->lock );
     p_sys->f_elevation = newval.f_float ;
@@ -651,10 +651,10 @@ static int ElevationCallback( vlc_object_t *p_this, char const *psz_var,
 }
 
 static int RadiusCallback( vlc_object_t *p_this, char const *psz_var,
-                          vlc_value_t oldval, vlc_value_t newval, void *p_data )
+                          vlc_value_t oldval, vlc_value_t newval, void *pf_data )
 {
     VLC_UNUSED(psz_var); VLC_UNUSED(oldval);
-    filter_t *p_filter = (filter_t *)p_data;
+    filter_t *p_filter = (filter_t *)pf_data;
     filter_sys_t *p_sys = p_filter->p_sys;
     vlc_mutex_lock( &p_sys->lock );
     p_sys->f_radius = newval.f_float ;
@@ -667,20 +667,20 @@ static int RadiusCallback( vlc_object_t *p_this, char const *psz_var,
 
 /* new virtual source position selected */
 static int SwitchCallback( vlc_object_t *p_this, char const *psz_var,
-                           vlc_value_t oldval, vlc_value_t newval, void *p_data )
+                           vlc_value_t oldval, vlc_value_t newval, void *pf_data )
 {
     VLC_UNUSED(psz_var); VLC_UNUSED(oldval);
-    filter_t *p_filter = (filter_t *)p_data;
+    filter_t *p_filter = (filter_t *)pf_data;
     filter_sys_t *p_sys = p_filter->p_sys;
     vlc_mutex_lock( &p_sys->lock );
     p_sys->i_switch = (int) newval.f_float ;
     if ( p_sys->i_switch )
     {   /* if switch not equal 0, pre-defined virtual source positions are used: */
-        for ( int i = 0 ; i < p_sys->i_n_conv ; i++ ) *(p_sys->p_speaker_pos + i ) = 0;
+        for ( int i = 0 ; i < p_sys->i_n_conv ; i++ ) *(p_sys->pf_speaker_pos + i ) = 0;
     }
     else /* if switch is zero */
     {   /* get speaker positions depending on current input format */
-        GetSpeakerPos ( p_filter, p_sys->p_speaker_pos );
+        GetSpeakerPos ( p_filter, p_sys->pf_speaker_pos );
     }
     vlc_mutex_unlock( &p_sys->lock );
     /* re-load IRs based on new GUI settings: */
@@ -691,15 +691,15 @@ static int SwitchCallback( vlc_object_t *p_this, char const *psz_var,
 
 /* new SOFA file selected */
 static int SelectCallback( vlc_object_t *p_this, char const *psz_var,
-                           vlc_value_t oldval, vlc_value_t newval, void *p_data )
+                           vlc_value_t oldval, vlc_value_t newval, void *pf_data )
 {
     VLC_UNUSED(psz_var); VLC_UNUSED(oldval);
-    filter_t *p_filter = (filter_t *)p_data;
+    filter_t *p_filter = (filter_t *)pf_data;
     filter_sys_t *p_sys = p_filter->p_sys;
     vlc_mutex_lock( &p_sys->lock );
     if ( p_sys->sofa[((int)newval.f_float + 5 - 1 ) % 5].i_ncid )
     {
-        p_sys->i_i_sofa = ( (int) newval.f_float + 5 - 1) % 5 ;
+        p_sys->i_sofa_id = ( (int) newval.f_float + 5 - 1) % 5 ;
         p_sys->b_mute = false;
         vlc_mutex_unlock( &p_sys->lock );
         /* re-load IRs based on new GUI settings: */
@@ -708,7 +708,7 @@ static int SelectCallback( vlc_object_t *p_this, char const *psz_var,
     }
     else
     {
-        msg_Dbg( p_filter, "Invalid File selected!" );
+        msg_Err( p_filter, "Selected SOFA file is invalid. Please select valid SOFA file." );
         p_sys->b_mute = true;
         vlc_mutex_unlock( &p_sys->lock );
     }
@@ -727,16 +727,16 @@ static int Open( vlc_object_t *p_this )
         return VLC_ENOMEM;
 
     vlc_object_t *p_out = p_filter->p_parent; /* assign filter output */
-    char *c_filename[N_SOFA];
+    char *psz_filename[N_SOFA];
     const char *psz_var_names_filename[N_SOFA] =
         { "sofalizer-filename1", "sofalizer-filename2", "sofalizer-filename3" };
     for ( int i = 0 ; i < N_SOFA ; i++ )
     {   /* get SOFA file names from advanced settings */
-        c_filename[i] = var_CreateGetStringCommand( p_filter, psz_var_names_filename[i] );
+        psz_filename[i] = var_CreateGetStringCommand( p_filter, psz_var_names_filename[i] );
     }
     /* get user settings */
-    p_sys->f_rotation   = abs ( ( - (int) var_CreateGetFloat ( p_out, "sofalizer-rotation" ) + 720 ) % 360 );
-    p_sys->i_i_sofa     = (int) ( var_CreateGetFloat ( p_out, "sofalizer-select" ) ) - 1;
+    p_sys->f_rotation   = fabs ( ( - (int) var_CreateGetFloat ( p_out, "sofalizer-rotation" ) + 720 ) % 360 );
+    p_sys->i_sofa_id     = (int) ( var_CreateGetFloat ( p_out, "sofalizer-select" ) ) - 1;
     p_sys->i_switch     = (int) ( var_CreateGetFloat ( p_out, "sofalizer-switch" ) );
     p_sys->f_gain       = var_CreateGetFloat( p_out, "sofalizer-gain" );
     p_sys->f_elevation  = var_CreateGetFloat( p_out, "sofalizer-elevation" );
@@ -746,14 +746,14 @@ static int Open( vlc_object_t *p_this )
         { "sofalizer-pos1-azi", "sofalizer-pos2-azi", "sofalizer-pos3-azi", "sofalizer-pos4-azi" };
     for ( int i = 0 ; i < N_POSITIONS ; i++ )
     {   /* get azimuth angles of virtual source positions from advanced settings */
-        p_sys->i_azimuth_array[i] = ( var_InheritInteger ( p_out, psz_var_names_azimuth_array[i] ) + 720 ) % 360 ;
+        p_sys->pi_azimuth_array[i] = ( var_InheritInteger ( p_out, psz_var_names_azimuth_array[i] ) + 720 ) % 360 ;
     }
 
     const char *psz_var_names_elevation_array[N_POSITIONS] =
         { "sofalizer-pos1-ele", "sofalizer-pos2-ele", "sofalizer-pos3-ele", "sofalizer-pos4-ele" };
     for ( int i = 0 ; i < N_POSITIONS ; i++ )
     {   /* get elevation angles of virtual source positions from advanced settings */
-        p_sys->i_elevation_array[i] = var_InheritInteger( p_out, psz_var_names_elevation_array[i] ) ;
+        p_sys->pi_elevation_array[i] = var_InheritInteger( p_out, psz_var_names_elevation_array[i] ) ;
     }
 
     p_sys->i_processing_type = var_InheritInteger( p_out,
@@ -778,7 +778,8 @@ static int Open( vlc_object_t *p_this )
 
     int i_err = -1; /* error code of SRC function */
 
-    float *p_ir_temp; /* temporary variable for resampled IRs */
+    float *pf_ir_temp; /* temporary variable for resampled IRs */
+    int i_status = 0; /* zero, if no file could be loaded */
 
     /* load SOFA files, resample if sampling rate different from audio file */
     for( int i = 0; i < N_SOFA; i++)
@@ -789,17 +790,14 @@ static int Open( vlc_object_t *p_this )
     }
     for( int i = 0;  i < N_SOFA; i++ )
     {
-        if ( LoadSofa( p_filter, c_filename[i], i , &i_samplingrate) != VLC_SUCCESS )
+        if ( LoadSofa( p_filter, psz_filename[i], i , &i_samplingrate) != VLC_SUCCESS )
         {   /* file loading error */
-            msg_Err(p_filter, "Error while loading SOFA file %d: '%s'", i + 1, c_filename[i] );
-            FreeAllSofa( p_filter );
-            free( p_sys );
-            return VLC_EGENERIC;
+            msg_Err(p_filter, "Error while loading SOFA file %d: '%s'", i + 1, psz_filename[i] );
         }
         else if (i_samplingrate != i_samplingrate_stream)
         {   /* no file loading error, resampling required */
             msg_Dbg( p_filter, "File %d: '%s' loaded. Resampling impulse responses to %d Hz.",
-                i + 1 , c_filename[i], i_samplingrate_stream );
+                i + 1 , psz_filename[i], i_samplingrate_stream );
 
             /* -- sampling rate conversion using SRC -- */
 
@@ -812,8 +810,8 @@ static int Open( vlc_object_t *p_this )
                 i_channels * i_n_samples_new;
 
             /* get temporary memory for resampled IRs */
-            p_ir_temp = malloc( sizeof(float) * i_n_samples_out );
-            if( !p_ir_temp ) /* memory allocation failed */
+            pf_ir_temp = malloc( sizeof(float) * i_n_samples_out );
+            if( !pf_ir_temp ) /* memory allocation failed */
             {
                 FreeAllSofa( p_filter );
                 free( p_sys );
@@ -829,40 +827,40 @@ static int Open( vlc_object_t *p_this )
             //i_err = src_simple( &src, i_resampling_type, i_channels );
             for( int j = 0; j < i_channels; j++ )
             {
-                src.data_in = p_sys->sofa[i].p_data_ir + j * p_sys->sofa[i].i_n_samples; /* IRs of current file */
-                src.data_out = p_ir_temp + j * i_n_samples_new; /* write to temporary IR memory */
+                src.data_in = p_sys->sofa[i].pf_data_ir + j * p_sys->sofa[i].i_n_samples; /* IRs of current file */
+                src.data_out = pf_ir_temp + j * i_n_samples_new; /* write to temporary IR memory */
                 i_err = src_simple( &src, i_resampling_type, 1 );
                 if( unlikely( i_err ) ) /* if error occured during resampling */
                 {
                     msg_Err( p_filter, "cannot resample: %s", src_strerror (i_err) );
                     FreeAllSofa( p_filter );
                     free( p_sys );
-                    free( p_ir_temp );
+                    free( pf_ir_temp );
                     return VLC_EGENERIC;
                 }
             }
 
             /* reallocate memory for resampled IRs */
-            p_sys->sofa[i].p_data_ir = realloc( p_sys->sofa[i].p_data_ir,
+            p_sys->sofa[i].pf_data_ir = realloc( p_sys->sofa[i].pf_data_ir,
                                        sizeof( float ) * i_n_samples_out );
-            if( !p_sys->sofa[i].p_data_ir ) /* memory allocation failed */
+            if( !p_sys->sofa[i].pf_data_ir ) /* memory allocation failed */
             {
                 FreeAllSofa( p_filter );
                 free( p_sys );
-                free( p_ir_temp );
+                free( pf_ir_temp );
                 return VLC_ENOMEM;
             }
 
             /* copy resampled IRs from temporary to SOFA struct variables */
-            memcpy( p_sys->sofa[i].p_data_ir, p_ir_temp,
+            memcpy( p_sys->sofa[i].pf_data_ir, pf_ir_temp,
                     sizeof( float ) * i_n_samples_out );
 
             /* update SOFA struct */
             p_sys->sofa[i].i_n_samples = i_n_samples_new;
 
             /* free temporary IR memory */
-            free( p_ir_temp );
-            p_ir_temp = NULL;
+            free( pf_ir_temp );
+            pf_ir_temp = NULL;
 
             msg_Dbg( p_filter,
                 "Resampled %d impulses responses (each IR: %d samples at %d Hz to %d samples at %d Hz sampling rate, SOFA file %d).",
@@ -873,13 +871,22 @@ static int Open( vlc_object_t *p_this )
              * maintain same delay time in sec with the new sampling rate */
             for( int j = 0; j < 2 * p_sys->sofa[i].i_m_dim; j++ )
             {
-                *( p_sys->sofa[i].p_data_delay + j ) *= round( d_ratio );
+                *( p_sys->sofa[i].pi_data_delay + j ) *= round( d_ratio );
             }
+            i_status++; /* increase status after successful file loading */
         }
         else /* no file loading error, resampling not required */
         {
-            msg_Dbg( p_filter, "File %d: '%s' loaded", i + 1 , c_filename[i] );
+            msg_Dbg( p_filter, "File %d: '%s' loaded", i + 1 , psz_filename[i] );
+            i_status++; /* increase status after successful file loading */
         }
+    }
+    if( !i_status )
+    {
+        msg_Err( p_filter, "No valid SOFA file could be loaded. Please specify at least one valid SOFA file." );
+        FreeAllSofa( p_filter );
+        free( p_sys );
+        return VLC_EGENERIC;
     }
 
     /* set filter settings and calculate speaker positions */
@@ -922,7 +929,9 @@ static int Open( vlc_object_t *p_this )
         }
     }
     p_sys->i_n_longest_filter = i_n_max; /* longest IR plus max. delay */
-    p_sys->i_buffer_length = pow(2, ceil(log( i_n_max )/ log(2) ) ); /* buffer length as power of 2 */
+    /* buffer length is longest IR plus max. delay -> next power of 2
+       (32 - count leading zeros gives required exponent)  */
+    p_sys->i_buffer_length = pow(2, 32 - clz( (uint32_t) i_n_max ) );
 
     p_sys->i_output_buffer_length = 0; /* initialization */
     p_sys->i_n_fft = 0; /* 0 until output buffer length was retrieved */
@@ -934,35 +943,35 @@ static int Open( vlc_object_t *p_this )
 
     /* Allocate memory for the impulse responses, delays and the ringbuffers */
     /* size: (longest IR) * (number of channels to convolute), without LFE */
-    p_sys->p_data_ir_l = malloc( sizeof(float) * i_n_max_ir * p_sys->i_n_conv );
-    p_sys->p_data_ir_r = malloc( sizeof(float) * i_n_max_ir * p_sys->i_n_conv );
+    p_sys->pf_data_ir_l = malloc( sizeof(float) * i_n_max_ir * p_sys->i_n_conv );
+    p_sys->pf_data_ir_r = malloc( sizeof(float) * i_n_max_ir * p_sys->i_n_conv );
     /* length:  number of channels to convolute */
-    p_sys->p_delay_l = malloc ( sizeof( int ) * p_sys->i_n_conv );
-    p_sys->p_delay_r = malloc ( sizeof( int ) * p_sys->i_n_conv );
+    p_sys->pi_delay_l = malloc ( sizeof( int ) * p_sys->i_n_conv );
+    p_sys->pi_delay_r = malloc ( sizeof( int ) * p_sys->i_n_conv );
     /* length: (buffer length) * (number of input channels),
      * OR: buffer length (if frequency domain processing)
      * calloc zero-initializes the buffer */
     if( p_sys->i_processing_type == PROC_TIME_DOM )
     {
-        p_sys->p_ringbuffer_l = calloc( p_sys->i_buffer_length * i_input_nb,
+        p_sys->pf_ringbuffer_l = calloc( p_sys->i_buffer_length * i_input_nb,
                                         sizeof( float ) );
-        p_sys->p_ringbuffer_r = calloc( p_sys->i_buffer_length * i_input_nb,
+        p_sys->pf_ringbuffer_r = calloc( p_sys->i_buffer_length * i_input_nb,
                                         sizeof( float ) );
     }
     else if( p_sys->i_processing_type == PROC_FREQ_DOM )
     {
-        p_sys->p_ringbuffer_l = calloc( p_sys->i_buffer_length,
+        p_sys->pf_ringbuffer_l = calloc( p_sys->i_buffer_length,
                                         sizeof( float ) );
-        p_sys->p_ringbuffer_r = calloc( p_sys->i_buffer_length,
+        p_sys->pf_ringbuffer_r = calloc( p_sys->i_buffer_length,
                                         sizeof( float ) );
     }
     /* length: number of channels to convolute */
-    p_sys->p_speaker_pos = malloc( sizeof( float) * p_sys->i_n_conv );
+    p_sys->pf_speaker_pos = malloc( sizeof( float) * p_sys->i_n_conv );
 
     /* memory allocation failed: */
-    if ( !p_sys->p_data_ir_l || !p_sys->p_data_ir_r || !p_sys->p_delay_l ||
-         !p_sys->p_delay_r || !p_sys->p_ringbuffer_l || !p_sys->p_ringbuffer_r
-         || !p_sys->p_speaker_pos )
+    if ( !p_sys->pf_data_ir_l || !p_sys->pf_data_ir_r || !p_sys->pi_delay_l ||
+         !p_sys->pi_delay_r || !p_sys->pf_ringbuffer_l || !p_sys->pf_ringbuffer_r
+         || !p_sys->pf_speaker_pos )
     {
         FreeAllSofa( p_filter );
         FreeFilter( p_filter );
@@ -972,7 +981,7 @@ static int Open( vlc_object_t *p_this )
     CompensateVolume ( p_filter );
 
     /* get speaker positions */
-    if ( GetSpeakerPos ( p_filter, p_sys->p_speaker_pos ) != VLC_SUCCESS )
+    if ( GetSpeakerPos ( p_filter, p_sys->pf_speaker_pos ) != VLC_SUCCESS )
     {
         msg_Err (p_filter, "Couldn't get speaker positions. Input channel configuration not supported. ");
         FreeAllSofa( p_filter );
@@ -980,7 +989,7 @@ static int Open( vlc_object_t *p_this )
         return VLC_EGENERIC;
     }
     vlc_mutex_init( &p_sys->lock );
-    /* load IRs to p_data_ir_l and p_data_ir_r for required directions */
+    /* load IRs to pf_data_ir_l and pf_data_ir_r for required directions */
     if( p_sys->i_processing_type == PROC_TIME_DOM )
     {   /* only load IRs if time-domain convolution is used,
          * otherwise, data is loaded on FFT size change */
@@ -1054,7 +1063,7 @@ static block_t *DoWork( filter_t *p_filter, block_t *p_in_buf )
         const int i_nb_samples_convolution =
             p_sys->i_n_longest_filter + p_out_buf->i_nb_samples;
         const int i_n_fft = p_sys->i_n_fft = /* next power of 2 */
-            pow( 2, ceil(log( i_nb_samples_convolution )/ log(2) ) );
+            pow(2, 32 - clz( (uint32_t) i_nb_samples_convolution ) );
 
         /* update FFT configuration */
         free( p_sys->p_fft_cfg ); /* free previous FFT config */
@@ -1085,27 +1094,27 @@ static block_t *DoWork( filter_t *p_filter, block_t *p_in_buf )
 
     /* threads for simultaneous computation of left and right channel */
     vlc_thread_t left_thread, right_thread;
-    struct t_thread_data t_data_l, t_data_r;
+    struct thread_data_s t_data_l, t_data_r;
 
     /* GUI gain -3 dB per channel, -6 dB to get LFE on a similar level */
-    float f_gain_lfe = exp( (p_sys->f_gain - 3 * i_input_nb - 6) / 20 * log(10));
+    float f_gain_lfe = expf( (p_sys->f_gain - 3 * i_input_nb - 6) / 20 * logf(10));
 
-    /* prepare t_thread_data structs for L and R channel, respectively */
+    /* prepare thread_data_s structs for L and R channel, respectively */
     t_data_l.p_sys = t_data_r.p_sys = p_sys;
     t_data_l.p_in_buf = t_data_r.p_in_buf = p_in_buf;
-    t_data_l.p_input_nb = t_data_r.p_input_nb = &i_input_nb;
+    t_data_l.pi_input_nb = t_data_r.pi_input_nb = &i_input_nb;
     t_data_l.f_gain_lfe = t_data_r.f_gain_lfe = f_gain_lfe;
     t_data_l.i_write = t_data_r.i_write = p_sys->i_write;
-    t_data_l.p_ringbuffer = p_sys->p_ringbuffer_l;
-    t_data_r.p_ringbuffer = p_sys->p_ringbuffer_r;
-    t_data_l.p_data = p_sys->p_data_ir_l;
-    t_data_r.p_data = p_sys->p_data_ir_r;
-    t_data_l.p_n_clippings = &i_n_clippings_l;
-    t_data_r.p_n_clippings = &i_n_clippings_r;
-    t_data_l.p_dest = (float *)p_out_buf->p_buffer;
-    t_data_r.p_dest = (float *)p_out_buf->p_buffer + 1;
-    t_data_l.p_delay = p_sys->p_delay_l;
-    t_data_r.p_delay = p_sys->p_delay_r;
+    t_data_l.pf_ringbuffer = p_sys->pf_ringbuffer_l;
+    t_data_r.pf_ringbuffer = p_sys->pf_ringbuffer_r;
+    t_data_l.pf_data = p_sys->pf_data_ir_l;
+    t_data_r.pf_data = p_sys->pf_data_ir_r;
+    t_data_l.pi_n_clippings = &i_n_clippings_l;
+    t_data_r.pi_n_clippings = &i_n_clippings_r;
+    t_data_l.pf_dest = (float *)p_out_buf->p_buffer;
+    t_data_r.pf_dest = (float *)p_out_buf->p_buffer + 1;
+    t_data_l.pi_delay = p_sys->pi_delay_l;
+    t_data_r.pi_delay = p_sys->pi_delay_r;
 
     if ( unlikely( p_sys->b_mute ) ) /* mutes output (e.g. invalid SOFA file selected) */
     {
@@ -1116,7 +1125,11 @@ static block_t *DoWork( filter_t *p_filter, block_t *p_in_buf )
         if( vlc_clone( &left_thread, (void *)&sofalizer_Convolute,
         (void *)&t_data_l, VLC_THREAD_PRIORITY_AUDIO ) ) goto out;
         if( vlc_clone( &right_thread, (void *)&sofalizer_Convolute,
-        (void *)&t_data_r, VLC_THREAD_PRIORITY_AUDIO ) ) goto out;
+        (void *)&t_data_r, VLC_THREAD_PRIORITY_AUDIO ) )
+        {
+            vlc_join ( left_thread, NULL );
+            goto out;
+        }
         vlc_join ( left_thread, NULL );
         vlc_join ( right_thread, NULL );
         p_sys->i_write = t_data_l.i_write;
@@ -1141,64 +1154,64 @@ out: block_Release( p_in_buf );
 
 void sofalizer_Convolute ( void *p_ptr )
 {
-    struct t_thread_data *t_data;
-    t_data = (struct t_thread_data *)p_ptr;
+    struct thread_data_s *t_data;
+    t_data = (struct thread_data_s *)p_ptr;
     struct filter_sys_t *p_sys = t_data->p_sys;
-    int i_n_samples = p_sys->sofa[p_sys->i_i_sofa].i_n_samples; /* length of one IR */
-    float *p_src = (float *)t_data->p_in_buf->p_buffer; /* get pointer to audio input buffer */
-    float *p_temp_ir;
-    float *p_dest = t_data->p_dest; /* get pointer to audio output buffer */
+    int i_n_samples = p_sys->sofa[p_sys->i_sofa_id].i_n_samples; /* length of one IR */
+    float *pf_src = (float *)t_data->p_in_buf->p_buffer; /* get pointer to audio input buffer */
+    float *pf_temp_ir;
+    float *pf_dest = t_data->pf_dest; /* get pointer to audio output buffer */
     int i_read;
-    int *p_delay = t_data->p_delay; /* broadband delay for each IR to be convolved */
-    int i_input_nb = *t_data->p_input_nb; /* number of input channels */
+    int *pi_delay = t_data->pi_delay; /* broadband delay for each IR to be convolved */
+    int i_input_nb = *t_data->pi_input_nb; /* number of input channels */
     /* ring buffer length is: longest IR plus max. delay -> next power of 2 */
     int i_buffer_length = p_sys->i_buffer_length;
     /* -1 for AND instead of MODULO (applied to powers of 2): */
     uint32_t i_modulo = (uint32_t) i_buffer_length - 1;
-    float *p_ringbuffer[i_input_nb]; /* holds ringbuffer for each input channel */
+    float *pf_ringbuffer[i_input_nb]; /* holds ringbuffer for each input channel */
     for ( int l = 0 ; l < i_input_nb ; l++ )
     {   /* get starting address of ringbuffer for each input channel */
-        p_ringbuffer[l] = t_data->p_ringbuffer + l * i_buffer_length ;
+        pf_ringbuffer[l] = t_data->pf_ringbuffer + l * i_buffer_length ;
     }
     int i_write = t_data->i_write;
-    float *p_ir = t_data->p_data;
+    float *pf_ir = t_data->pf_data;
     /* outer loop: go through all samples of current input buffer: */
     for ( int i = t_data->p_in_buf->i_nb_samples ; i-- ; )
     {   /* i is not used as an index in the loop! */
-        *( p_dest ) = 0;
+        *( pf_dest ) = 0;
         for ( int l = 0 ; l < i_input_nb ; l++ )
         {   /* write current input sample to ringbuffer (for each channel) */
-            *( p_ringbuffer[l] + i_write ) = *( p_src++ );
+            *( pf_ringbuffer[l] + i_write ) = *( pf_src++ );
         }
-        p_temp_ir = p_ir; /* using same set of IRs for each sample */
+        pf_temp_ir = pf_ir; /* using same set of IRs for each sample */
         /* loop goes through all channels to be convolved (excl. LFE): */
         for ( int l = 0 ; l < p_sys->i_n_conv ; l++ )
         {
             /* current read position in ringbuffer: input sample write position
              * - delay for l-th ch. + diff. betw. IR length and buffer length
              * (mod buffer length) */
-            i_read = ( i_write - *( p_delay + l ) -
+            i_read = ( i_write - *( pi_delay + l ) -
                        ( i_n_samples - 1 ) + i_buffer_length ) & i_modulo;
 
             for ( int j = i_n_samples ; j-- ; ) /* go through samples of IR */
             {
                 /* multiply signal and IR, and add up the results */
-                *( p_dest ) += *( p_ringbuffer[l] + ( ( i_read++ ) & i_modulo ) ) *
-                               *( p_temp_ir++ );
+                *( pf_dest ) += *( pf_ringbuffer[l] + ( ( i_read++ ) & i_modulo ) ) *
+                               *( pf_temp_ir++ );
             }
         }
         if ( p_sys->b_lfe ) /* LFE */
         {
             /* apply gain to LFE signal and add to output buffer */
-            *( p_dest ) += *( p_ringbuffer[p_sys->i_n_conv] + i_write ) * t_data->f_gain_lfe;
+            *( pf_dest ) += *( pf_ringbuffer[p_sys->i_n_conv] + i_write ) * t_data->f_gain_lfe;
         }
         /* clippings counter */
-        if ( *( p_dest ) >= 1 ) /* if current output sample  >= 1 */
+        if ( fabs( *( pf_dest ) ) >= 1 ) /* if current output sample  >= 1 */
         {
-            *t_data->p_n_clippings = *t_data->p_n_clippings + 1;
+            *t_data->pi_n_clippings = *t_data->pi_n_clippings + 1;
         }
         /* move output buffer pointer by +2 to get to next sample of processed channel: */
-        p_dest   += 2;
+        pf_dest   += 2;
         i_write  = ( i_write + 1 ) & i_modulo; /* update ringbuffer write position */
     }
     t_data->i_write = i_write; /* remember write position in ringbuffer for next call */
@@ -1207,23 +1220,23 @@ void sofalizer_Convolute ( void *p_ptr )
 
 int sofalizer_FastConvolution( void *p_ptr_l, void *p_ptr_r )
 {
-    struct t_thread_data *t_data_l, *t_data_r;
-    t_data_l = (struct t_thread_data *)p_ptr_l;
-    t_data_r = (struct t_thread_data *)p_ptr_r;
+    struct thread_data_s *t_data_l, *t_data_r;
+    t_data_l = (struct thread_data_s *)p_ptr_l;
+    t_data_r = (struct thread_data_s *)p_ptr_r;
     struct filter_sys_t *p_sys = t_data_l->p_sys;
 
     /* get length of one IR */
-    int i_n_samples = p_sys->sofa[p_sys->i_i_sofa].i_n_samples;
+    int i_n_samples = p_sys->sofa[p_sys->i_sofa_id].i_n_samples;
     /* no. input/output samples */
     int i_output_buffer_length = t_data_l->p_in_buf->i_nb_samples;
     int i_n_fft = p_sys->i_n_fft; /* length of one FFT */
     int i_n_conv = p_sys->i_n_conv; /* no. channels to convolve */
 
     /* get pointer to audio input buffer */
-    float *p_src = (float *)t_data_l->p_in_buf->p_buffer;
-    float *p_dest = t_data_l->p_dest; /* get pointer to audio output buffer */
+    float *pf_src = (float *)t_data_l->p_in_buf->p_buffer;
+    float *pf_dest = t_data_l->pf_dest; /* get pointer to audio output buffer */
     int i_offset; /* helper variable for efficient loops */
-    int i_input_nb = *t_data_l->p_input_nb; /* number of input channels */
+    int i_input_nb = *t_data_l->pi_input_nb; /* number of input channels */
     /* ring buffer length is: longest IR plus max. delay -> next power of 2 */
     int i_buffer_length = p_sys->i_buffer_length;
     /* -1 for AND instead of MODULO (applied to powers of 2): */
@@ -1232,8 +1245,8 @@ int sofalizer_FastConvolution( void *p_ptr_l, void *p_ptr_r )
 
     /* get starting address of ringbuffer for usage as overflow buffer, *
      * no initialization necessary because calloc was used */
-    float *p_ringbuffer_l = t_data_l->p_ringbuffer;
-    float *p_ringbuffer_r = t_data_r->p_ringbuffer;
+    float *pf_ringbuffer_l = t_data_l->pf_ringbuffer;
+    float *pf_ringbuffer_r = t_data_r->pf_ringbuffer;
 
     /* get pointers to current HRTF data */
     kiss_fft_cpx *p_hrtf_l = p_sys->p_data_hrtf_l;
@@ -1260,21 +1273,20 @@ int sofalizer_FastConvolution( void *p_ptr_l, void *p_ptr_r )
 
     /* find min. between no. samples and output buffer length:
      * (important, if one IR is longer than the output buffer) */
-    int i_n_read = ( i_n_samples < i_output_buffer_length ) ?
-                     i_n_samples : i_output_buffer_length;
+    int i_n_read = ( ( i_n_samples - 1 ) < i_output_buffer_length ) ?
+                     ( i_n_samples - 1 ) : i_output_buffer_length;
     for( int j = 0; j < i_n_read; j++ )
     {   /* initialize output buf with saved signal from overflow buf */
-    //printf("%d: %f ",j,*( p_ringbuffer_l[0] + i_write ));
-        *( p_dest + 2 * j ) = *( p_ringbuffer_l + i_write );
-        *( p_dest + 2 * j + 1 ) = *( p_ringbuffer_r + i_write );
-        *( p_ringbuffer_l + i_write ) = 0.0; /* re-set read samples to zero */
-        *( p_ringbuffer_r + i_write ) = 0.0;
+        *( pf_dest + 2 * j ) = *( pf_ringbuffer_l + i_write );
+        *( pf_dest + 2 * j + 1 ) = *( pf_ringbuffer_r + i_write );
+        *( pf_ringbuffer_l + i_write ) = 0.0; /* re-set read samples to zero */
+        *( pf_ringbuffer_r + i_write ) = 0.0;
         /* update ringbuffer read/write position */
         i_write  = ( i_write + 1 ) & i_modulo;
     }
 
     /* initialize rest of output buffer with 0 */
-    memset( p_dest + 2 * i_n_read, 0,
+    memset( pf_dest + 2 * i_n_read, 0,
             sizeof( float ) * 2 * ( i_output_buffer_length - i_n_read ) );
 
     for( int i = 0; i < i_n_conv; i++ )
@@ -1287,7 +1299,7 @@ int sofalizer_FastConvolution( void *p_ptr_l, void *p_ptr_r )
         for( int j = 0; j < i_output_buffer_length; j++ )
         {   /* pepare input for FFT */
             /* write all samples of current input channel to FFT input array */
-            p_fft_in[j].r = *( p_src + i + j * i_input_nb );
+            p_fft_in[j].r = *( pf_src + i + j * i_input_nb );
         }
 
         /* transform input signal of current channel to frequency domain */
@@ -1312,17 +1324,17 @@ int sofalizer_FastConvolution( void *p_ptr_l, void *p_ptr_r )
         kiss_fft( p_sys->p_ifft_cfg, p_fft_in_r, p_fft_out_r );
         for( int j = 0; j < i_output_buffer_length; j++ )
         {   /* write output signal of current channel to output buffer */
-            *( p_dest + 2 * j ) += p_fft_out_l[j].r / (float) i_n_fft;
-            *( p_dest + 2 * j + 1 ) += p_fft_out_r[j].r / (float) i_n_fft;
+            *( pf_dest + 2 * j ) += p_fft_out_l[j].r / (float) i_n_fft;
+            *( pf_dest + 2 * j + 1 ) += p_fft_out_r[j].r / (float) i_n_fft;
         }
 
         int i_write_pos = 0;
-        for( int j = 0; j < i_n_samples; j++ ) /* overflow is as long as IR */
+        for( int j = 0; j < i_n_samples - 1; j++ ) /* overflow length is IR length - 1 */
         {   /* write the rest of output signal to overflow buffer */
             i_write_pos = ( i_write + j ) & i_modulo;
-            *( p_ringbuffer_l + i_write_pos ) +=
+            *( pf_ringbuffer_l + i_write_pos ) +=
                 p_fft_out_l[i_output_buffer_length + j].r / (float) i_n_fft; /* right channel */
-            *( p_ringbuffer_r + i_write_pos ) +=
+            *( pf_ringbuffer_r + i_write_pos ) +=
                 p_fft_out_r[i_output_buffer_length + j].r / (float) i_n_fft; /* left channel */
         }
     }
@@ -1333,22 +1345,22 @@ int sofalizer_FastConvolution( void *p_ptr_l, void *p_ptr_r )
         if ( p_sys->b_lfe ) /* LFE */
         {
             /* apply gain to LFE signal and add to output buffer */
-            *( p_dest ) +=
-                *( p_src + i_n_conv + i * i_input_nb ) * t_data_l->f_gain_lfe;
-            *( p_dest + 1 ) +=
-                *( p_src + i_n_conv + i * i_input_nb ) * t_data_r->f_gain_lfe;
+            *( pf_dest ) +=
+                *( pf_src + i_n_conv + i * i_input_nb ) * t_data_l->f_gain_lfe;
+            *( pf_dest + 1 ) +=
+                *( pf_src + i_n_conv + i * i_input_nb ) * t_data_r->f_gain_lfe;
         }
         /* clippings counter */
-        if ( *( p_dest ) >= 1 ) /* if current output sample  >= 1 */
+        if ( fabs( *( pf_dest ) ) >= 1 ) /* if current output sample  >= 1 */
         {   /* left channel */
-            *t_data_l->p_n_clippings = *t_data_l->p_n_clippings + 1;
+            *t_data_l->pi_n_clippings = *t_data_l->pi_n_clippings + 1;
         }
-        if ( *( p_dest + 1 ) >= 1 ) /* if current output sample  >= 1 */
+        if ( fabs( *( pf_dest + 1 ) ) >= 1 ) /* if current output sample  >= 1 */
         {   /* right channel */
-            *t_data_r->p_n_clippings = *t_data_r->p_n_clippings + 1;
+            *t_data_r->pi_n_clippings = *t_data_r->pi_n_clippings + 1;
         }
         /* move output buffer pointer by +2 to get to next sample of processed channel: */
-        p_dest += 2;
+        pf_dest += 2;
     }
 
     /* remember read/write position in ringbuffer for next call */
@@ -1367,7 +1379,7 @@ int sofalizer_FastConvolution( void *p_ptr_l, void *p_ptr_r )
 
 /*****************************************************************************
 * LoadData: Load the impulse responses (reversed) for required source positions
-*         to p_data_l and p_data_r and applies the gain (GUI) to them.
+*         to pf_data_l and pf_data_r and applies the gain (GUI) to them.
 *
 * FindM: Find the impulse response closest to a required source position
 ******************************************************************************/
@@ -1375,16 +1387,23 @@ int sofalizer_FastConvolution( void *p_ptr_l, void *p_ptr_r )
 static int LoadData ( filter_t *p_filter, int i_azim, int i_elev, float f_radius)
 {
     struct filter_sys_t *p_sys = p_filter->p_sys;
-    const int i_n_samples = p_sys->sofa[p_sys->i_i_sofa].i_n_samples;
+    if( unlikely( !p_sys->sofa[p_sys->i_sofa_id].i_ncid ) )
+    {   /* if an invalid SOFA file has been selected */
+        p_sys->b_mute = true; /* mute output */
+        msg_Err( p_filter,
+            "Selected SOFA file is invalid. Please select valid SOFA file." );
+        return;
+    }
+    const int i_n_samples = p_sys->sofa[p_sys->i_sofa_id].i_n_samples;
     const int i_n_fft = p_sys->i_n_fft;
     int i_n_conv = p_sys->i_n_conv; /* no. channels to convolve (excl. LFE) */
-    int i_delay_l[i_n_conv]; /* broadband delay for each IR */
-    int i_delay_r[i_n_conv];
+    int pi_delay_l[i_n_conv]; /* broadband delay for each IR */
+    int pi_delay_r[i_n_conv];
     int i_input_nb = aout_FormatNbChannels( &p_filter->fmt_in.audio ); /* no. input channels */
-    float f_gain_lin = exp( (p_sys->f_gain - 3 * i_input_nb) / 20 * log(10) ); /* GUI gain - 3dB/channel */
+    float f_gain_lin = expf( (p_sys->f_gain - 3 * i_input_nb) / 20 * logf(10) ); /* GUI gain - 3dB/channel */
 
-    float *p_data_ir_l = NULL;
-    float *p_data_ir_r = NULL;
+    float *pf_data_ir_l = NULL;
+    float *pf_data_ir_r = NULL;
     kiss_fft_cpx *p_data_hrtf_l = NULL;
     kiss_fft_cpx *p_data_hrtf_r = NULL;
     kiss_fft_cpx *p_fft_in_l = NULL;
@@ -1393,13 +1412,13 @@ static int LoadData ( filter_t *p_filter, int i_azim, int i_elev, float f_radius
     if( p_sys->i_processing_type == PROC_TIME_DOM )
     {
         /* get temporary IR for L and R channel */
-        p_data_ir_l =
+        pf_data_ir_l =
             malloc( sizeof( float ) * i_n_conv * i_n_samples );
-        if( !p_data_ir_l )
+        if( !pf_data_ir_l )
             return VLC_ENOMEM; /* memory allocation failed */
-        p_data_ir_r =
+        pf_data_ir_r =
             malloc( sizeof( float ) * i_n_conv * i_n_samples );
-        if( !p_data_ir_r )
+        if( !pf_data_ir_r )
             return VLC_ENOMEM; /* memory allocation failed */
     }
     else if( ( p_sys->i_processing_type == PROC_FREQ_DOM )  &&
@@ -1424,20 +1443,20 @@ static int LoadData ( filter_t *p_filter, int i_azim, int i_elev, float f_radius
     int i_m[p_sys->i_n_conv]; /* measurement index m of IR closest to required source positions */
     if ( p_sys->i_switch ) /* if switch on GUI not 0, use pre-defined virtual source positions */
     {
-        i_azim = p_sys->i_azimuth_array[p_sys->i_switch - 1];
-        i_elev = p_sys->i_elevation_array[p_sys->i_switch -1];
+        i_azim = p_sys->pi_azimuth_array[p_sys->i_switch - 1];
+        i_elev = p_sys->pi_elevation_array[p_sys->i_switch -1];
     }
     int i_azim_orig = i_azim;
 
     for ( int i = 0; i < p_sys->i_n_conv; i++ )
     {   /* load and store IRs and corresponding delays */
-        i_azim = (int)( p_sys->p_speaker_pos[i] + i_azim_orig ) % 360;
+        i_azim = (int)( p_sys->pf_speaker_pos[i] + i_azim_orig ) % 360;
         /* get id of IR closest to desired position */
         i_m[i] = FindM( p_sys, i_azim, i_elev, f_radius );
 
         /* load the delays associated with the current IRs */
-        i_delay_l[i] = *( p_sys->sofa[p_sys->i_i_sofa].p_data_delay + 2 * i_m[i] );
-        i_delay_r[i] = *( p_sys->sofa[p_sys->i_i_sofa].p_data_delay + 2 * i_m[i] + 1);
+        pi_delay_l[i] = *( p_sys->sofa[p_sys->i_sofa_id].pi_data_delay + 2 * i_m[i] );
+        pi_delay_r[i] = *( p_sys->sofa[p_sys->i_sofa_id].pi_data_delay + 2 * i_m[i] + 1);
 
         if( p_sys->i_processing_type == PROC_TIME_DOM )
         {
@@ -1446,11 +1465,11 @@ static int LoadData ( filter_t *p_filter, int i_azim, int i_elev, float f_radius
             {
                 /* load reversed IRs of the specified source position
                  * sample-by-sample for left and right ear; and apply gain */
-                *( p_data_ir_l + i_offset + j ) = /* left channel */
-                *( p_sys->sofa[p_sys->i_i_sofa].p_data_ir +
+                *( pf_data_ir_l + i_offset + j ) = /* left channel */
+                *( p_sys->sofa[p_sys->i_sofa_id].pf_data_ir +
                 2 * i_m[i] * i_n_samples + i_n_samples - 1 - j ) * f_gain_lin;
-                *( p_data_ir_r + i_offset + j ) = /* right channel */
-                *( p_sys->sofa[p_sys->i_i_sofa].p_data_ir +
+                *( pf_data_ir_r + i_offset + j ) = /* right channel */
+                *( p_sys->sofa[p_sys->i_sofa_id].pf_data_ir +
                 2 * i_m[i] * i_n_samples + i_n_samples - 1 - j  + i_n_samples ) * f_gain_lin;
             }
         }
@@ -1483,11 +1502,11 @@ static int LoadData ( filter_t *p_filter, int i_azim, int i_elev, float f_radius
                  * sample-by-sample and apply gain,
                  * L channel is loaded to real part, R channel to imag part,
                  * IRs ared shifted by L and R delay */
-                p_fft_in_l[ i_delay_l[i] + j ].r = /* left channel */
-                *( p_sys->sofa[p_sys->i_i_sofa].p_data_ir +
+                p_fft_in_l[ pi_delay_l[i] + j ].r = /* left channel */
+                *( p_sys->sofa[p_sys->i_sofa_id].pf_data_ir +
                    2 * i_m[i] * i_n_samples + j ) * f_gain_lin;
-                p_fft_in_r[ i_delay_r[i] + j ].r = /* right channel */
-                *( p_sys->sofa[p_sys->i_i_sofa].p_data_ir +
+                p_fft_in_r[ pi_delay_r[i] + j ].r = /* right channel */
+                *( p_sys->sofa[p_sys->i_sofa_id].pf_data_ir +
                    ( 2 * i_m[i] + 1 ) * i_n_samples + j ) * f_gain_lin;
             }
 
@@ -1497,26 +1516,26 @@ static int LoadData ( filter_t *p_filter, int i_azim, int i_elev, float f_radius
         }
 
         msg_Dbg( p_filter, "Index: %d, Azimuth: %f, Elevation: %f, Radius: %f of SOFA file.",
-                 i_m[i], *(p_sys->sofa[p_sys->i_i_sofa].p_sp_a + i_m[i]),
-                 *(p_sys->sofa[p_sys->i_i_sofa].p_sp_e + i_m[i]),
-                 *(p_sys->sofa[p_sys->i_i_sofa].p_sp_r + i_m[i]) );
+                 i_m[i], *(p_sys->sofa[p_sys->i_sofa_id].pf_sp_a + i_m[i]),
+                 *(p_sys->sofa[p_sys->i_sofa_id].pf_sp_e + i_m[i]),
+                 *(p_sys->sofa[p_sys->i_sofa_id].pf_sp_r + i_m[i]) );
     }
 
     /* copy IRs and delays to allocated memory in the filter_sys_t struct: */
     vlc_mutex_lock( &p_sys->lock );
     if( p_sys->i_processing_type == PROC_TIME_DOM )
     {
-        memcpy ( p_sys->p_data_ir_l, p_data_ir_l,
+        memcpy ( p_sys->pf_data_ir_l, pf_data_ir_l,
             sizeof( float ) * i_n_conv * i_n_samples );
-        memcpy ( p_sys->p_data_ir_r, p_data_ir_r,
+        memcpy ( p_sys->pf_data_ir_r, pf_data_ir_r,
             sizeof( float ) * i_n_conv * i_n_samples );
 
-        free( p_data_ir_l ); /* free temporary IR memory */
-        free( p_data_ir_r );
+        free( pf_data_ir_l ); /* free temporary IR memory */
+        free( pf_data_ir_r );
     }
     else if( ( p_sys->i_processing_type == PROC_FREQ_DOM ) &&
              ( p_sys->i_n_fft != 0) )
-    {   /* if required length of p_sys->p_data has changed */
+    {   /* if required length of p_sys->pf_data has changed */
         p_sys->p_data_hrtf_l = realloc( p_sys->p_data_hrtf_l,
                           sizeof( kiss_fft_cpx ) * i_n_fft * p_sys->i_n_conv );
         p_sys->p_data_hrtf_r = realloc( p_sys->p_data_hrtf_r,
@@ -1536,8 +1555,8 @@ static int LoadData ( filter_t *p_filter, int i_azim, int i_elev, float f_radius
         free( p_fft_in_r );
     }
 
-    memcpy ( p_sys->p_delay_l , &i_delay_l[0] , sizeof( int ) * p_sys->i_n_conv );
-    memcpy ( p_sys->p_delay_r , &i_delay_r[0] , sizeof( int ) * p_sys->i_n_conv );
+    memcpy ( p_sys->pi_delay_l , &pi_delay_l[0] , sizeof( int ) * p_sys->i_n_conv );
+    memcpy ( p_sys->pi_delay_r , &pi_delay_r[0] , sizeof( int ) * p_sys->i_n_conv );
     vlc_mutex_unlock( &p_sys->lock );
 
     return VLC_SUCCESS;
@@ -1546,27 +1565,27 @@ static int LoadData ( filter_t *p_filter, int i_azim, int i_elev, float f_radius
 static int FindM ( filter_sys_t *p_sys, int i_azim, int i_elev, float f_radius )
 {
     /* get source positions and M of currently selected SOFA file */
-    float *p_sp_a = p_sys->sofa[p_sys->i_i_sofa].p_sp_a; /* azimuth angle */
-    float *p_sp_e = p_sys->sofa[p_sys->i_i_sofa].p_sp_e; /* elevation angle */
-    float *p_sp_r = p_sys->sofa[p_sys->i_i_sofa].p_sp_r; /* radius */
-    int i_m_dim = p_sys->sofa[p_sys->i_i_sofa].i_m_dim; /* no. measurements */
+    float *pf_sp_a = p_sys->sofa[p_sys->i_sofa_id].pf_sp_a; /* azimuth angle */
+    float *pf_sp_e = p_sys->sofa[p_sys->i_sofa_id].pf_sp_e; /* elevation angle */
+    float *pf_sp_r = p_sys->sofa[p_sys->i_sofa_id].pf_sp_r; /* radius */
+    int i_m_dim = p_sys->sofa[p_sys->i_sofa_id].i_m_dim; /* no. measurements */
 
-    int i_i_best = 0; /* index m currently closest to desired source pos. */
+    int i_best_id = 0; /* index m currently closest to desired source pos. */
     float f_delta = 1000; /* offset between desired and currently best pos. */
     float f_current;
     for ( int i = 0; i < i_m_dim ; i++ )
     {   /* search through all measurements in currently selected SOFA file */
         /* distance of current to desired source position: */
-        f_current = fabs ( *(p_sp_a++) - i_azim )
-                    + fabs( *(p_sp_e++) - i_elev )
-                    + fabs( *(p_sp_r++) - f_radius );
+        f_current = fabs ( *(pf_sp_a++) - i_azim )
+                    + fabs( *(pf_sp_e++) - i_elev )
+                    + fabs( *(pf_sp_r++) - f_radius );
         if ( f_current <= f_delta )
         {   /* if current distance is smaller than smallest distance so far */
             f_delta = f_current;
-            i_i_best = i; /* remember index */
+            i_best_id = i; /* remember index */
         }
     }
-    return i_i_best;
+    return i_best_id;
 }
 
 /*****************************************************************************
